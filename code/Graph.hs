@@ -1,9 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, BangPatterns #-}
-module Graph
-    ( Nodes(..)
-    , Edges(..)
-    , Colour(..)
-    ) where
+module Graph where
 import RandomUtil
 import Control.Arrow (first)
 import System.Random ()
@@ -49,11 +45,11 @@ randomEdges (Nodes nodes) numberOfConnections =
        return edges
   where numberOfNodes = V.length nodes
 
-randomGraph :: MonadRandom m => m (Graph Char)
-randomGraph =
-  do let nodesList = take 20 ['a'..]
+randomGraph :: MonadRandom m => Int -> m (Graph Int)
+randomGraph size =
+  do let nodesList = take size [0..]
          nodes = Nodes $ V.fromList nodesList
-     edges <- randomEdges nodes 22
+     edges <- randomEdges nodes (round $ fromIntegral size * 1.3)
      return (nodes, edges)
 
 randomGraph' :: MonadRandom m => Int -> m (Graph (Char, (Double, Double)))
@@ -97,12 +93,13 @@ paths start goal (Nodes ns, Edges es) =
     go [] start
   where go visited current
           | current == goal = [[goal]]
+          | current `elem` visited = []
           | otherwise =
               let myNeighbours = if null visited
                                      then es ! current
                                      else nextNeighbours current (head visited)
-              in if null myNeighbours then [[]]
-                     else let furtherPaths = concatMap (go (current:[])) myNeighbours
+              in if null myNeighbours then []
+                     else let furtherPaths = concatMap (go (current:visited)) myNeighbours
                           in map (current :) $ filter (not . null) furtherPaths
 
         nextNeighbours me prev = filter (/= prev) $ es ! me
@@ -116,7 +113,12 @@ graphFromList rels f =
 
 
 main :: IO ()
-main = defaultMain
+main = --tests
+  do g <- randomGraph 60
+     print . last $ paths 0 1 g
+
+tests :: IO ()
+tests = defaultMain
   [ testGroup "Trivial graphs"
     [ testCase "empty" $ paths 0 1 (Nodes V.empty, Edges V.empty) @?= []
     , testCase "minimal" $ paths 0 1 (graphFromList [(0,1)] id) @?= [[0, 1]]
@@ -125,9 +127,17 @@ main = defaultMain
     , testCase "diamond"
         $ sort (paths 0 2 $ graphFromList [(0,1),(1,2),(0,2),(0,3),(3,2)] id)
           @?= [[0,1,2],[0,2],[0,3,2]]
-    , testCase "triangleAppendix"
+    , testCase "triangle appendix"
         $ sort (paths 0 1 $ graphFromList [(0,1),(0,2),(2,3),(3,4),(4,2)] id)
           @?= [[0,1]]
+    , testCase "lattice 3x3"
+        $ sort (paths 0 8 $ graphFromList [(0,1),(0,3),(1,4),(1,2),(2,5),(3,6)
+                                          ,(3,4),(4,5),(4,7),(5,8),(6,7),(7,8)]
+                                          id)
+          @?= [ [0,1,2,5,4,3,6,7,8], [0,1,2,5,4,7,8], [0,1,2,5,8]
+              , [0,1,4,3,6,7,8], [0,1,4,5,8], [0,1,4,7,8]
+              , [0,3,4,1,2,5,8], [0,3,4,5,8], [0,3,4,7,8]
+              , [0,3,6,7,4,1,2,5,8], [0,3,6,7,4,5,8], [0,3,6,7,8]]
     ]
   ]
 
