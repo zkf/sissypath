@@ -13,12 +13,14 @@ import qualified Data.Vector.Mutable as V (write)
 import Data.Vector (Vector, accum, indexed, slice, ifoldl', (!), (//))
 import Control.Monad.Random
 import Control.Monad.State
-import Graphics.Gloss
+import Test.Framework
+import Test.Framework.Providers.HUnit
+import Test.HUnit
 
 -- | Graph : nodes indexed by ints, lists of edges
 type Graph a = (Nodes a, Edges)
-data Edges = Edges !(Vector [Int]) deriving (Show)
-data Nodes a = Nodes !(Vector a) deriving (Show, Eq)
+newtype Edges = Edges (Vector [Int]) deriving (Show, Eq)
+newtype Nodes a = Nodes (Vector a) deriving (Show, Eq)
 
 printGraph :: (Show a) => Graph a -> IO ()
 printGraph (Nodes ns, Edges es) =
@@ -72,7 +74,7 @@ randomGraph' size =
              bs <- getRandomRs (0, 1::Double)
              return $ zip as bs
 
-renderGraph :: Graph (Char, (Double, Double)) -> Picture
+-- renderGraph :: Graph (Char, (Double, Double)) -> Picture
 
 
 data Colour = Red | Green | Blue  deriving (Eq, Ord, Enum, Show, Bounded)
@@ -88,10 +90,45 @@ getRandomColours n =
 
 
 
+paths :: Int -> Int -> Graph a -> [[Int]]
+paths _ _ (Nodes ns, _)
+  | V.null ns = []
+paths start goal (Nodes ns, Edges es) =
+    go [] start
+  where go visited current
+          | current == goal = [[goal]]
+          | otherwise =
+              let myNeighbours = if null visited
+                                     then es ! current
+                                     else nextNeighbours current (head visited)
+              in if null myNeighbours then [[]]
+                     else let furtherPaths = concatMap (go (current:[])) myNeighbours
+                          in map (current :) $ filter (not . null) furtherPaths
+
+        nextNeighbours me prev = filter (/= prev) $ es ! me
+
+graphFromList :: [(Int, Int)] -> (Int -> a) -> Graph a
+graphFromList rels f =
+    let nodes = map f . nub . uncurry (++) $ unzip rels
+        len = length nodes
+        edges = neighboursFromList rels len
+    in (Nodes $ V.fromList nodes, edges)
 
 
-
-
-
+main :: IO ()
+main = defaultMain
+  [ testGroup "Trivial graphs"
+    [ testCase "empty" $ paths 0 1 (Nodes V.empty, Edges V.empty) @?= []
+    , testCase "minimal" $ paths 0 1 (graphFromList [(0,1)] id) @?= [[0, 1]]
+    , testCase "appendix" $ paths 0 1 (graphFromList [(0,1),(0,2)] id) @?= [[0, 1]]
+    , testCase "triangle" $ sort (paths 0 2 (graphFromList [(0,1),(0,2),(1,2)] id)) @?= [[0,1,2],[0,2]]
+    , testCase "diamond"
+        $ sort (paths 0 2 $ graphFromList [(0,1),(1,2),(0,2),(0,3),(3,2)] id)
+          @?= [[0,1,2],[0,2],[0,3,2]]
+    , testCase "triangleAppendix"
+        $ sort (paths 0 1 $ graphFromList [(0,1),(0,2),(2,3),(3,4),(4,2)] id)
+          @?= [[0,1]]
+    ]
+  ]
 
 
