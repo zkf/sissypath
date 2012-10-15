@@ -104,6 +104,20 @@ paths start goal (Nodes ns, Edges es) =
 
         nextNeighbours me prev = filter (/= prev) $ es ! me
 
+islands :: Graph a -> [Int]
+islands g@(Nodes ns, Edges es) =
+    let reachable = traverseFrom 0 g
+    in filter (`notElem` reachable) [0..V.length ns - 1]
+
+traverseFrom :: Int -> Graph a -> [Int]
+traverseFrom i (_, Edges es) =
+    go [] i
+  where go visited current
+          | current `elem` visited = visited
+          | otherwise =
+              let myNeighbours = es ! current
+              in foldl' go (current:visited) myNeighbours
+
 graphFromList :: [(Int, Int)] -> (Int -> a) -> Graph a
 graphFromList rels f =
     let nodes = map f . nub . uncurry (++) $ unzip rels
