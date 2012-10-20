@@ -12,6 +12,7 @@ import Control.Monad.State
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.HUnit
+import Graphics.Gloss hiding (Vector)
 
 -- | Graph : nodes indexed by ints, lists of edges
 type Graph a = (Nodes a, Edges)
@@ -70,7 +71,33 @@ randomGraph' size =
              bs <- getRandomRs (0, 1::Double)
              return $ zip as bs
 
--- renderGraph :: Graph (Char, (Double, Double)) -> Picture
+renderGraph :: (Int, Int) -> Graph (Char, (Double, Double)) -> Picture
+renderGraph (width, height) (Nodes ns, Edges es) =
+    Pictures [nodesPic, edgesPic]
+  where
+        widthF = fromIntegral width
+        heightF = fromIntegral height
+        nsF = V.map (\(v, c) -> (v, toFracs c)) ns
+        toFracs (a, b) = (realToFrac a, realToFrac b)
+        nodesPic = Color white . Pictures . V.toList $ V.map renderNode nsF
+        edgesPic = Color white . Pictures . V.toList $ V.imap renderEdges es
+        renderNode (_,(x,y)) = Translate ((x - 0.5) * widthF)
+                                         ((y - 0.5) * heightF)
+                               $ circleSolid 5
+        renderEdges i fs = Pictures $ map (renderEdge i) fs
+        renderEdge i e   =
+            let (_,(x0, y0)) = nsF ! i
+                (_,(x1, y1)) = nsF ! e
+                x0' = (x0 - 0.5) * widthF
+                y0' = (y0 - 0.5) * heightF
+                x1' = (x1 - 0.5) * widthF
+                y1' = (y1 - 0.5) * heightF
+            in Line [(x0', y0'), (x1', y1')]
+
+displayGraph :: Graph (Char, (Double, Double)) -> IO ()
+displayGraph g = display window black (renderGraph dims g)
+  where window = InWindow "graph" dims (0, 0)
+        dims   = (800, 600)
 
 
 data Colour = Red | Green | Blue  deriving (Eq, Ord, Enum, Show, Bounded)
@@ -104,10 +131,16 @@ paths start goal (Nodes ns, Edges es) =
 
         nextNeighbours me prev = filter (/= prev) $ es ! me
 
-islands :: Graph a -> [Int]
+islands :: Graph a -> [[Int]]
 islands g@(Nodes ns, Edges es) =
-    let reachable = traverseFrom 0 g
-    in filter (`notElem` reachable) [0..V.length ns - 1]
+    let nis = [0..V.length ns - 1]
+    in go nis
+  where go [] = []
+        go unvisited@(n:_) =
+           let reachable = traverseFrom n g
+               unreachable = unvisited \\ reachable
+           in reachable : go unreachable
+
 
 traverseFrom :: Int -> Graph a -> [Int]
 traverseFrom i (_, Edges es) =
@@ -128,8 +161,9 @@ graphFromList rels f =
 
 main :: IO ()
 main = --tests
-  do g <- randomGraph 60
-     print . last $ paths 0 1 g
+  do g <- randomGraph' 20
+     displayGraph g
+     --print . last $ paths 0 1 g
 
 tests :: IO ()
 tests = defaultMain
