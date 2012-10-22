@@ -100,19 +100,6 @@ displayGraph g = display window black (renderGraph dims g)
         dims   = (800, 600)
 
 
-data Colour = Red | Green | Blue  deriving (Eq, Ord, Enum, Show, Bounded)
-
-instance Random Colour where
-    randomR (lo, hi) gen = first toEnum (randomR (fromEnum lo, fromEnum hi) gen)
-    random = randomR (minBound, maxBound)
-
-getRandomColours :: MonadRandom m => Int -> m (Nodes Colour)
-getRandomColours n =
-    do vs <- getRandoms
-       return . Nodes . V.fromList $ take n vs
-
-
-
 paths :: Int -> Int -> Graph a -> [[Int]]
 paths _ _ (Nodes ns, _)
   | V.null ns = []
