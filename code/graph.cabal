@@ -1,0 +1,28 @@
+Name:        graph
+Version:     0.1
+Synopsis:    graph
+Description: graph
+Homepage:    https://github.com/zkf/sissypath/
+Author:      Bjørnar Hansen <tilbjornar _ gmail>
+Build-type:          Simple
+Cabal-version:       >=1.8
+
+Extra-source-files:    tests/Tests.hs
+
+Library
+--  Main-is:       Main.hs
+  Hs-source-dirs:  src
+  Exposed-modules: Data.Graph.Internal
+                   Data.Graph
+                   Data.Graph.Path.Bruteforce
+  Other-modules:   Data.Graph.RandomUtil
+  Ghc-options:    -Wall
+  Build-depends: base, mtl, MonadRandom, vector, random
+
+Test-suite tests
+  Type:           exitcode-stdio-1.0
+  Hs-source-dirs: tests
+  Main-is:        Tests.hs
+  Build-depends:  base, HUnit, test-framework, test-framework-hunit,
+                  MonadRandom, vector, graph
+  Ghc-options:    -Wall
