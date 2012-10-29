@@ -16,7 +16,7 @@ newtype Nodes a = Nodes (Vector a) deriving (Show, Eq)
 instance (Show a) => Show (Graph a) where
     show (Graph (Nodes ns, Edges es)) =
         "id, value: neighbours\n"
-        ++ (concat . V.toList $ V.imap ppNode ns)
+        ++ (unlines . V.toList $ V.imap ppNode ns)
       where ppNode i n = show i ++ ", " ++ show n ++ ": "
                          ++ unwords (map show (es ! i))
 
@@ -85,7 +85,8 @@ islands g@(Graph (Nodes ns, _)) =
                unreachable = unvisited \\ reachable
            in reachable : go unreachable
 
-
+-- | Perform a complete traversal of the graph from the given node index.
+-- Returns a list of all nodes reachable from the given node.
 traverseFrom :: Int -> Graph a -> [Int]
 traverseFrom i (Graph (_, Edges es)) =
     go [] i
