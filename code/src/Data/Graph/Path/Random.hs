@@ -5,9 +5,19 @@ import Control.Monad.Random
 import Control.Monad
 import Data.Vector ((!))
 
--- | randomly find a path from start to goal through the given graph.
+-- | Randomly find a path from start to goal through the given graph.
 randomPath :: MonadRandom m => Int -> Int -> Graph Double -> m [Int]
-randomPath start goal (Graph (Nodes ns, Edges es)) = go [start] start
+randomPath start goal (Graph (Nodes ns, Edges es)) = liftM (start:) $ go start
+  where go current
+          | current == goal = return []
+          | otherwise = do let myNeighbours = es ! current
+                           next <- fromList $ zip myNeighbours [1, 1..]
+                           liftM (next:) $ go next
+
+-- | Randomly find a path from start to goal through the given graph. The path
+-- will not have any repeated vertices.
+randomPathWithMemory :: MonadRandom m => Int -> Int -> Graph Double -> m [Int]
+randomPathWithMemory start goal (Graph (Nodes ns, Edges es)) = go [start] start
   where go :: MonadRandom m => [Int] -> Int -> m [Int]
         go visited current
           | current == goal = return [current]
@@ -21,13 +31,4 @@ randomPath start goal (Graph (Nodes ns, Edges es)) = go [start] start
                             if null further
                                then go (next : visited) current
                                else return (current : further)
-
-
-randomPath' :: MonadRandom m => Int -> Int -> Graph Double -> m [Int]
-randomPath' start goal (Graph (Nodes ns, Edges es)) = liftM (start:) $ go start
-  where go current
-          | current == goal = return []
-          | otherwise = do let myNeighbours = es ! current
-                           next <- fromList $ zip myNeighbours [1, 1..]
-                           liftM (next:) $ go next
 
