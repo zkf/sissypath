@@ -20,15 +20,16 @@ randomGraph size =
      let -- nodes = Nodes $ V.fromList nodesList
          theNodes' = V.replicate size 0.0
      theEdges <- randomEdges size (round $ fromIntegral size * (3 :: Double))
-     let theNodes = dangerzone theNodes' theEdges
+     pointZero <- getRandomR (0, size - 1)
+     let theNodes = insertDangerZone pointZero theNodes' theEdges
      return $ Graph theNodes theEdges
-  where dangerzone :: Vector Double -> Edges -> Vector Double
-        dangerzone theNodes theEdges =
-           let neighbourTree = [0] : nlevels [0] 0
+  where insertDangerZone :: Int -> Vector Double -> Edges -> Vector Double
+        insertDangerZone pointZero theNodes theEdges =
+           let neighbourTree = [pointZero] : nlevels [pointZero] pointZero
                newNodes =
                    concat
                    $ zipWith (\ns p -> zip ns (repeat p))
-                             neighbourTree [1.0, 0.5]
+                             neighbourTree [1.0, 1.0]
            in theNodes // newNodes
           where nlevels :: [Int] -> Int -> [[Int]]
                 nlevels v i = let myNs =  (theEdges ! i) \\ v
