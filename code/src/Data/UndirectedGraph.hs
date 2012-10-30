@@ -13,7 +13,9 @@ import Control.Monad
 import Control.Monad.Random
 import qualified Data.Vector as V
 import Data.Vector (Vector, (!), (//))
-import Data.List ((\\), sort, nub)
+import Data.List (sort, nub)
+import Data.Set ((\\), Set, union, singleton)
+import qualified Data.Set as S
 
 randomGraph :: MonadRandom m => Int -> Int -> m (Graph Double)
 randomGraph size numEdges =
@@ -26,16 +28,15 @@ randomGraph size numEdges =
      return $ Graph theNodes theEdges
   where insertDangerZone :: Int -> Vector Double -> Edges -> Vector Double
         insertDangerZone pointZero theNodes theEdges =
-           let neighbourTree = [pointZero] : nlevels [pointZero] pointZero
-               newNodes =
-                   concat
-                   $ zipWith (\ns p -> zip ns (repeat p))
+           let newNodes = concat
+                   $ zipWith (\ns p -> zip (S.toList ns) (repeat p))
                              neighbourTree [1.0, 1.0]
+               neighbourTree = singleton pointZero : nlevels (singleton pointZero) pointZero
            in theNodes // newNodes
-          where nlevels :: [Int] -> Int -> [[Int]]
+          where nlevels :: Set Int -> Int -> [Set Int]
                 nlevels v i = let myNs =  (theEdges ! i) \\ v
-                                  v'   = v ++ myNs
-                              in myNs : concatMap (nlevels v') myNs
+                                  v'   = v `union` myNs
+                              in myNs : concatMap (nlevels v') (S.toList myNs)
 
 randomGraph' :: MonadRandom m => Int -> m (Graph (Char, (Double, Double)))
 randomGraph' size =

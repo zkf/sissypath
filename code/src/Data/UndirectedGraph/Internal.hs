@@ -7,12 +7,13 @@ import qualified Data.Vector as V
 import Data.Vector (Vector, accum, (!))
 import Control.Monad.Random
 import Control.Monad.State
+import qualified Data.Set as S
 
 -- | Graph : nodes indexed by ints, lists of edges
 data Graph a = Graph { nodes :: Nodes a
                         , edges :: Edges
                         }
-type Edges = Vector [Int]
+type Edges = Vector (S.Set Int)
 type Nodes a = Vector a
 
 instance (Show a) => Show (Graph a) where
@@ -20,7 +21,7 @@ instance (Show a) => Show (Graph a) where
         "id, value: neighbours\n"
         ++ (unlines . V.toList $ V.imap ppNode ns)
       where ppNode i n = show i ++ ", " ++ show n ++ ": "
-                         ++ unwords (map show (es ! i))
+                         ++ unwords (S.toList $ S.map show (es ! i))
 
 printGraph :: (Show a) => Graph a -> IO ()
 printGraph = putStrLn . show
@@ -34,8 +35,8 @@ bounds v = (0, V.length v - 1)
 
 neighboursFromList :: [(Int, Int)] -> Int -> Edges
 neighboursFromList relations numberOfNodes =
-    let a = V.replicate numberOfNodes []
-    in accum (flip (:)) a (nub $ relations ++ symmetricRelations)
+    let a = V.replicate numberOfNodes S.empty
+    in accum (flip (S.insert)) a (nub $ relations ++ symmetricRelations)
   where symmetricRelations = let (as, bs) = unzip relations in zip bs as
 
 randomEdges :: MonadRandom m => Int -> Int -> m Edges
@@ -91,12 +92,12 @@ islands g@(Graph ns _) =
 -- Returns a list of all nodes reachable from the given node.
 traverseFrom :: Int -> Graph a -> [Int]
 traverseFrom i (Graph _ es) =
-    go [] i
+    S.toList $ go S.empty i
   where go visited current
-          | current `elem` visited = visited
+          | current `S.member` visited = visited
           | otherwise =
               let myNeighbours = es ! current
-              in foldl' go (current:visited) myNeighbours
+              in S.foldl' go (current `S.insert` visited) myNeighbours
 
 
 

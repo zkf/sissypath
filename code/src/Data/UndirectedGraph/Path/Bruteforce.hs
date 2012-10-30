@@ -4,7 +4,9 @@ where
 import Data.UndirectedGraph.Internal
 import qualified Data.Vector as V
 import Data.Vector ((!))
-import Data.List
+import Data.Set (empty, insert, singleton, member, (\\))
+import qualified Data.Set as S
+import Data.List hiding ((\\), insert)
 import Data.Function (on)
 
 -- | Determines the shortest path by enumerating all possible paths from a to
@@ -23,18 +25,15 @@ bruteForceOptimalPath a b graph =
 enumeratePaths :: Int -> Int -> Graph a -> [[Int]]
 enumeratePaths _ _ (Graph ns _)
   | V.null ns = []
-enumeratePaths start goal (Graph _ es) =
-    go [] start
+enumeratePaths start goal (Graph _ es) = go (singleton start) start
   where go visited current
           | current == goal = [[goal]]
-          | current `elem` visited = []
           | otherwise =
-              let myNeighbours = if null visited
-                                     then es ! current
-                                     else nextNeighbours current (head visited)
-              in if null myNeighbours then []
-                     else let furtherPaths = concatMap (go (current:visited)) myNeighbours
+              let myNeighbours = S.toList $ es ! current \\ visited
+              in if null myNeighbours
+                     then []
+                     else let visited' = current `insert` visited
+                              furtherPaths = concatMap (go visited') myNeighbours
                           in map (current :) $ filter (not . null) furtherPaths
 
-        nextNeighbours me prev = filter (/= prev) $ es ! me
 
