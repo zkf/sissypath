@@ -1,6 +1,6 @@
-module Data.Graph.Path.Random where
+module Data.UndirectedGraph.Path.Random where
 
-import Data.Graph.Internal
+import Data.UndirectedGraph.Internal
 import Control.Monad.Random
 import Control.Monad
 import Data.Vector ((!))

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, BangPatterns #-}
-module Data.Graph.Internal where
-import Data.Graph.RandomUtil
+module Data.UndirectedGraph.Internal where
+import Data.UndirectedGraph.RandomUtil
 import System.Random ()
 import Data.List
 import qualified Data.Vector as V

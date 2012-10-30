@@ -1,7 +1,7 @@
-module Data.Graph.Path.Bruteforce
+module Data.UndirectedGraph.Path.Bruteforce
 where
 
-import Data.Graph.Internal
+import Data.UndirectedGraph.Internal
 import qualified Data.Vector as V
 import Data.Vector ((!))
 import Data.List

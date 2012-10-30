@@ -12,18 +12,18 @@ Extra-source-files:    tests/Tests.hs
 Library
 --  Main-is:       Main.hs
   Hs-source-dirs:  src
-  Exposed-modules: Data.Graph.Internal
-                   Data.Graph
-                   Data.Graph.Path.Bruteforce
-                   Data.Graph.Path.Random
-  Other-modules:   Data.Graph.RandomUtil
+  Exposed-modules: Data.UndirectedGraph.Internal
+                   Data.UndirectedGraph
+                   Data.UndirectedGraph.Path.Bruteforce
+                   Data.UndirectedGraph.Path.Random
+  Other-modules:   Data.UndirectedGraph.RandomUtil
   Ghc-options:    -Wall
-  Build-depends: base, mtl, MonadRandom, vector, random
+  Build-depends: base, mtl, MonadRandom, vector, random, containers
 
 Test-suite tests
   Type:           exitcode-stdio-1.0
   Hs-source-dirs: tests
   Main-is:        Tests.hs
   Build-depends:  base, HUnit, test-framework, test-framework-hunit,
-                  MonadRandom, vector, graph
+                  MonadRandom, vector, containers, graph
   Ghc-options:    -Wall

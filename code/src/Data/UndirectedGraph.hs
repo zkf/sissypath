@@ -1,4 +1,4 @@
-module Data.Graph
+module Data.UndirectedGraph
 ( randomGraph
 , randomGraph'
 , graphFromList
@@ -7,7 +7,7 @@ module Data.Graph
 , nodes)
 where
 
-import Data.Graph.Internal
+import Data.UndirectedGraph.Internal
 import Control.Monad
 import Control.Monad.Random
 import qualified Data.Vector as V

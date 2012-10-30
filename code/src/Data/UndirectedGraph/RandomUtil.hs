@@ -1,4 +1,4 @@
-module Data.Graph.RandomUtil
+module Data.UndirectedGraph.RandomUtil
     ( twoRandoms
     , randomPairs
     , withProbability

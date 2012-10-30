@@ -2,7 +2,8 @@ module Main where
 import qualified Data.Vector as V
 import Data.Vector ((!))
 import Data.Graph
-import Data.Graph.Path.Random
+import Data.UndirectedGraph.Path.Random
+import Data.UndirectedGraph.Path.Bruteforce
 import Graphics.Gloss hiding (Vector)
 
 

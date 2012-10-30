@@ -1,7 +1,7 @@
 module Main (main) where
-import Data.Graph
-import Data.Graph.Internal
-import Data.Graph.Path.Bruteforce
+import Data.UndirectedGraph
+import Data.UndirectedGraph.Internal
+import Data.UndirectedGraph.Path.Bruteforce
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.HUnit hiding (path)
