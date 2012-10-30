@@ -16,6 +16,7 @@ Library
                    Data.UndirectedGraph
                    Data.UndirectedGraph.Path.Bruteforce
                    Data.UndirectedGraph.Path.Random
+                   Data.UndirectedGraph.Path.Dijkstra
   Other-modules:   Data.UndirectedGraph.RandomUtil
   Ghc-options:    -Wall
   Build-depends: base, mtl, MonadRandom, vector, random, containers
