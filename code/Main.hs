@@ -1,5 +1,6 @@
 module Main where
 import qualified Data.Vector as V
+import qualified Data.Set as S
 import Data.Vector ((!))
 import Data.UndirectedGraph
 import Data.UndirectedGraph.Path.Random
@@ -9,7 +10,7 @@ import Graphics.Gloss hiding (Vector)
 
 main :: IO ()
 main =
-  do g <- randomGraph 30 60
+  do g <- randomGraph 15 30
      let p1 = bruteForceOptimalPath 0 7 g
      p2 <- randomPath 0 7 g
      p3 <- randomPathWithMemory 0 7 g
@@ -48,7 +49,7 @@ renderGraph (width, height) graph =
         renderNode (_,(x,y)) = Translate ((x - 0.5) * widthF)
                                          ((y - 0.5) * heightF)
                                $ circleSolid 5
-        renderEdges i fs = Pictures $ map (renderEdge i) fs
+        renderEdges i fs = Pictures . map (renderEdge i) $ S.toList fs
         renderEdge i e   =
             let (_,(x0, y0)) = nsF ! i
                 (_,(x1, y1)) = nsF ! e
