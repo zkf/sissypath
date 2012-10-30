@@ -12,11 +12,11 @@ import Control.Monad.State
 data Graph a = Graph { nodes :: Nodes a
                         , edges :: Edges
                         }
-newtype Edges = Edges (Vector [Int]) deriving (Show, Eq)
-newtype Nodes a = Nodes (Vector a) deriving (Show, Eq)
+type Edges = Vector [Int]
+type Nodes a = Vector a
 
 instance (Show a) => Show (Graph a) where
-    show (Graph (Nodes ns) (Edges es)) =
+    show (Graph ns es) =
         "id, value: neighbours\n"
         ++ (unlines . V.toList $ V.imap ppNode ns)
       where ppNode i n = show i ++ ", " ++ show n ++ ": "
@@ -35,7 +35,7 @@ bounds v = (0, V.length v - 1)
 neighboursFromList :: [(Int, Int)] -> Int -> Edges
 neighboursFromList relations numberOfNodes =
     let a = V.replicate numberOfNodes []
-    in Edges $ accum (flip (:)) a (nub $ relations ++ symmetricRelations)
+    in accum (flip (:)) a (nub $ relations ++ symmetricRelations)
   where symmetricRelations = let (as, bs) = unzip relations in zip bs as
 
 randomEdges :: MonadRandom m => Int -> Int -> m Edges
@@ -74,11 +74,11 @@ connectStrongly num =
 
 
 cost :: Graph Double -> [Int] -> Double
-cost (Graph (Nodes ns) _) path = 1 - product (map (\x -> 1 - ns ! x) path)
+cost (Graph ns _) path = 1 - product (map (\x -> 1 - ns ! x) path)
 
 
 islands :: Graph a -> [[Int]]
-islands g@(Graph (Nodes ns) _) =
+islands g@(Graph ns _) =
     let nis = [0..V.length ns - 1]
     in go nis
   where go [] = []
@@ -90,7 +90,7 @@ islands g@(Graph (Nodes ns) _) =
 -- | Perform a complete traversal of the graph from the given node index.
 -- Returns a list of all nodes reachable from the given node.
 traverseFrom :: Int -> Graph a -> [Int]
-traverseFrom i (Graph _ (Edges es)) =
+traverseFrom i (Graph _ es) =
     go [] i
   where go visited current
           | current `elem` visited = visited

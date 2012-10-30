@@ -7,7 +7,7 @@ import Data.Vector ((!))
 
 -- | Randomly find a path from start to goal through the given graph.
 randomPath :: MonadRandom m => Int -> Int -> Graph Double -> m [Int]
-randomPath start goal (Graph (Nodes ns) (Edges es)) = liftM (start:) $ go start
+randomPath start goal (Graph ns es) = liftM (start:) $ go start
   where go current
           | current == goal = return []
           | otherwise = do let myNeighbours = es ! current
@@ -17,7 +17,7 @@ randomPath start goal (Graph (Nodes ns) (Edges es)) = liftM (start:) $ go start
 -- | Randomly find a path from start to goal through the given graph. The path
 -- will not have any repeated vertices.
 randomPathWithMemory :: MonadRandom m => Int -> Int -> Graph Double -> m [Int]
-randomPathWithMemory start goal (Graph (Nodes ns) (Edges es)) = go [start] start
+randomPathWithMemory start goal (Graph ns es) = go [start] start
   where go :: MonadRandom m => [Int] -> Int -> m [Int]
         go visited current
           | current == goal = return [current]

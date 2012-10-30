@@ -1,4 +1,6 @@
 module Main where
+import qualified Data.Vector as V
+import Data.Vector ((!))
 import Data.Graph
 import Data.Graph.Path.Random
 import Graphics.Gloss hiding (Vector)
@@ -21,15 +23,18 @@ displayGraph g = display window black (renderGraph dims g)
         dims   = (800, 600)
 
 renderGraph :: (Int, Int) -> Graph (Char, (Double, Double)) -> Picture
-renderGraph (width, height) (Nodes ns, Edges es) =
+renderGraph (width, height) graph =
     Pictures [nodesPic, edgesPic]
   where
         widthF = fromIntegral width
         heightF = fromIntegral height
+        ns = nodes graph
+        es = edges graph
         nsF = V.map (\(v, c) -> (v, toFracs c)) ns
         toFracs (a, b) = (realToFrac a, realToFrac b)
         nodesPic = Color white . Pictures . V.toList $ V.map renderNode nsF
-        edgesPic = Color white . Pictures . V.toList $ V.imap renderEdges es
+        edgesPic = Color white . Pictures . V.toList
+                   $ V.imap renderEdges es
         renderNode (_,(x,y)) = Translate ((x - 0.5) * widthF)
                                          ((y - 0.5) * heightF)
                                $ circleSolid 5

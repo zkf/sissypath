@@ -12,7 +12,7 @@ main :: IO ()
 main = defaultMain
   [ testGroup "Enumerate paths"
     [ testCase "empty"
-        $ enumeratePaths 0 1 (Graph (Nodes V.empty) (Edges V.empty)) @?= []
+        $ enumeratePaths 0 1 (Graph V.empty V.empty) @?= []
     , testCase "minimal"
         $ enumeratePaths 0 1 (graphFromList [(0,1)] ones) @?= [[0, 1]]
     , testCase "appendix"

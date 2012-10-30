@@ -2,7 +2,9 @@ module Data.Graph
 ( randomGraph
 , randomGraph'
 , graphFromList
-, Graph)
+, Graph
+, edges
+, nodes)
 where
 
 import Data.Graph.Internal
@@ -18,10 +20,10 @@ randomGraph size =
      let -- nodes = Nodes $ V.fromList nodesList
          theNodes' = V.replicate size 0.0
      theEdges <- randomEdges size (round $ fromIntegral size * (3 :: Double))
-     let theNodes = Nodes $ dangerzone theNodes' theEdges
+     let theNodes = dangerzone theNodes' theEdges
      return $ Graph theNodes theEdges
   where dangerzone :: Vector Double -> Edges -> Vector Double
-        dangerzone theNodes (Edges theEdges) =
+        dangerzone theNodes theEdges =
            let neighbourTree = [0] : nlevels [0] 0
                newNodes =
                    concat
@@ -36,7 +38,7 @@ randomGraph size =
 randomGraph' :: MonadRandom m => Int -> m (Graph (Char, (Double, Double)))
 randomGraph' size =
   do thePoints <- take size `liftM` points
-     let theNodes = Nodes . V.fromList $ take size (zip ['a'..] thePoints)
+     let theNodes = V.fromList $ take size (zip ['a'..] thePoints)
          neighbours =  map (findNeighbours $ zip [0..] thePoints) thePoints
          relations = concat $ zipWith (\ns i -> map (\n -> (i, n)) ns) neighbours [0..]
          theEdges = neighboursFromList relations size
@@ -57,5 +59,5 @@ graphFromList rels vals =
                    . flip take vals . length . nub . uncurry (++) $ unzip rels
         len = V.length theNodes
         theEdges = neighboursFromList rels len
-    in Graph (Nodes theNodes) theEdges
+    in Graph (theNodes) theEdges
 
