@@ -1,5 +1,6 @@
 module Main where
-import Graph.Graph
+import Data.Graph
+import Data.Graph.Path.Random
 import Graphics.Gloss hiding (Vector)
 
 

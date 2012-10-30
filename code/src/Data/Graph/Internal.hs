@@ -9,12 +9,14 @@ import Control.Monad.Random
 import Control.Monad.State
 
 -- | Graph : nodes indexed by ints, lists of edges
-newtype Graph a = Graph (Nodes a, Edges)
+data Graph a = Graph { nodes :: Nodes a
+                        , edges :: Edges
+                        }
 newtype Edges = Edges (Vector [Int]) deriving (Show, Eq)
 newtype Nodes a = Nodes (Vector a) deriving (Show, Eq)
 
 instance (Show a) => Show (Graph a) where
-    show (Graph (Nodes ns, Edges es)) =
+    show (Graph (Nodes ns) (Edges es)) =
         "id, value: neighbours\n"
         ++ (unlines . V.toList $ V.imap ppNode ns)
       where ppNode i n = show i ++ ", " ++ show n ++ ": "
@@ -41,8 +43,8 @@ randomEdges numberOfNodes numberOfConnections =
     do let stronglyConnected = connectStrongly' numberOfNodes
        -- stronglyConnected <- connectStrongly numberOfNodes
        randomNeighbours <- randomPairs (numberOfConnections - numberOfNodes) (0, numberOfNodes - 1)
-       let edges = neighboursFromList (stronglyConnected ++ randomNeighbours) numberOfNodes
-       return edges
+       let theEdges = neighboursFromList (stronglyConnected ++ randomNeighbours) numberOfNodes
+       return theEdges
 
 -- | Given the number of nodes, return a list of relations such that, if the
 -- connections are taken to be bidirectional, the resulting graph is strongly
@@ -72,11 +74,11 @@ connectStrongly num =
 
 
 cost :: Graph Double -> [Int] -> Double
-cost (Graph (Nodes ns, _)) path = 1 - product (map (\x -> 1 - ns ! x) path)
+cost (Graph (Nodes ns) _) path = 1 - product (map (\x -> 1 - ns ! x) path)
 
 
 islands :: Graph a -> [[Int]]
-islands g@(Graph (Nodes ns, _)) =
+islands g@(Graph (Nodes ns) _) =
     let nis = [0..V.length ns - 1]
     in go nis
   where go [] = []
@@ -88,7 +90,7 @@ islands g@(Graph (Nodes ns, _)) =
 -- | Perform a complete traversal of the graph from the given node index.
 -- Returns a list of all nodes reachable from the given node.
 traverseFrom :: Int -> Graph a -> [Int]
-traverseFrom i (Graph (_, Edges es)) =
+traverseFrom i (Graph _ (Edges es)) =
     go [] i
   where go visited current
           | current `elem` visited = visited

@@ -21,9 +21,9 @@ bruteForceOptimalPath a b graph =
 
 -- | Enumerate all paths from start to goal.
 enumeratePaths :: Int -> Int -> Graph a -> [[Int]]
-enumeratePaths _ _ (Graph (Nodes ns, _))
+enumeratePaths _ _ (Graph (Nodes ns) _)
   | V.null ns = []
-enumeratePaths start goal (Graph (_, Edges es)) =
+enumeratePaths start goal (Graph _ (Edges es)) =
     go [] start
   where go visited current
           | current == goal = [[goal]]
