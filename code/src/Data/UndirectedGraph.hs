@@ -4,7 +4,8 @@ module Data.UndirectedGraph
 , graphFromList
 , Graph
 , edges
-, nodes)
+, nodes
+, cost)
 where
 
 import Data.UndirectedGraph.Internal
@@ -14,12 +15,12 @@ import qualified Data.Vector as V
 import Data.Vector (Vector, (!), (//))
 import Data.List ((\\), sort, nub)
 
-randomGraph :: MonadRandom m => Int -> m (Graph Double)
-randomGraph size =
+randomGraph :: MonadRandom m => Int -> Int -> m (Graph Double)
+randomGraph size numEdges =
   do -- nodesList <- take size `liftM` getRandomRs (0.0, 1.0)
      let -- nodes = Nodes $ V.fromList nodesList
          theNodes' = V.replicate size 0.0
-     theEdges <- randomEdges size (round $ fromIntegral size * (3 :: Double))
+     theEdges <- randomEdges size numEdges
      pointZero <- getRandomR (0, size - 1)
      let theNodes = insertDangerZone pointZero theNodes' theEdges
      return $ Graph theNodes theEdges
