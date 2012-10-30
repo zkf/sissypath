@@ -8,7 +8,16 @@ import Graphics.Gloss hiding (Vector)
 
 
 main :: IO ()
-main = undefined
+main =
+  do g <- randomGraph 30 60
+     let p1 = bruteForceOptimalPath 0 7 g
+     p2 <- randomPath 0 7 g
+     p3 <- randomPathWithMemory 0 7 g
+     let [c1, c2, c3] = map (cost g) [p1, p2, p3]
+     print g
+     putStrLn $ "bruteforce:   " ++ show c1 ++ " " ++ show p1
+           ++ "\nrandom:       " ++ show c2 ++ " " ++ show p2
+           ++ "\nrandom w/mem: " ++ show c3 ++ " " ++ show p3
   -- do g <- randomGraph 15
   --    let p =  bruteForceOptimalPath 0 7 g
   --        c = cost g p
