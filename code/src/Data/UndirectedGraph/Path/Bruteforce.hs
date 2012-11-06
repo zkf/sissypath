@@ -1,10 +1,10 @@
 module Data.UndirectedGraph.Path.Bruteforce
 where
 
-import Data.UndirectedGraph.Internal
-import qualified Data.Vector as V
-import Data.Vector ((!))
-import Data.Set (empty, insert, singleton, member, (\\))
+import Data.UndirectedGraph.Internal hiding (null)
+import qualified Data.UndirectedGraph.Internal as G
+import Data.IntMap ((!))
+import Data.Set (insert, singleton, (\\))
 import qualified Data.Set as S
 import Data.List hiding ((\\), insert)
 import Data.Function (on)
@@ -23,8 +23,7 @@ bruteForceOptimalPath a b graph =
 
 -- | Enumerate all paths from start to goal.
 enumeratePaths :: Int -> Int -> Graph a -> [[Int]]
-enumeratePaths _ _ (Graph ns _)
-  | V.null ns = []
+enumeratePaths _ _ g | G.null g = []
 enumeratePaths start goal (Graph _ es) = go (singleton start) start
   where go visited current
           | current == goal = [[goal]]

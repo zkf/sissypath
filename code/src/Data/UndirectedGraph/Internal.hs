@@ -1,26 +1,29 @@
 {-# LANGUAGE MultiParamTypeClasses, BangPatterns #-}
 module Data.UndirectedGraph.Internal where
+import Prelude hiding (null)
 import Data.UndirectedGraph.RandomUtil
 import System.Random ()
 import Data.List
-import qualified Data.Vector as V
-import Data.Vector (Vector, accum, (!))
 import Control.Monad.Random
 import Control.Monad.State
+import Control.Arrow (second)
 import qualified Data.Set as S
+import qualified Data.IntMap as IM
+import Data.IntMap (IntMap, (!))
+import Debug.Trace
 
 -- | Graph : nodes indexed by ints, lists of edges
 data Graph a = Graph { nodes :: Nodes a
                         , edges :: Edges
                         }
-type Edges = Vector (S.Set Int)
-type Nodes a = Vector a
+type Edges = IntMap (S.Set Int)
+type Nodes a = IntMap a
 
 instance (Show a) => Show (Graph a) where
     show (Graph ns es) =
         "id, value: neighbours\n"
-        ++ (unlines . V.toList $ V.imap ppNode ns)
-      where ppNode i n = show i ++ ", " ++ show n ++ ": "
+        ++ (unlines . map ppNode $ IM.toList ns)
+      where ppNode (i, n) = show i ++ ", " ++ show n ++ ": "
                          ++ unwords (S.toList $ S.map show (es ! i))
 
 printGraph :: (Show a) => Graph a -> IO ()
@@ -29,14 +32,27 @@ printGraph = putStrLn . show
 
 type ProbGraph = Graph Rational
 
-bounds :: Vector a -> (Int, Int)
-bounds v = (0, V.length v - 1)
+-- bounds :: Vector a -> (Int, Int)
+-- bounds v = (0, V.length v - 1)
+--
+null :: Graph g -> Bool
+null (Graph ns _) = IM.null ns
+
+-- | The value and neighbours of the given node, and the graph minus the node.
+view :: Show a => Int -> Graph a -> (a, S.Set Int, Graph a)
+view i g@(Graph ns es) =
+    let val = ns ! i
+        neighs = es ! i
+        es' = S.foldr (\k m -> IM.adjust (S.delete i) k m) es neighs
+        g' = Graph (IM.delete i ns) (IM.delete i es')
+    in (val, neighs, g')
 
 
 neighboursFromList :: [(Int, Int)] -> Int -> Edges
 neighboursFromList relations numberOfNodes =
-    let a = V.replicate numberOfNodes S.empty
-    in accum (flip (S.insert)) a (nub $ relations ++ symmetricRelations)
+    let a = map (second S.singleton) relations :: [(Int, S.Set Int)]
+        b = map (second S.singleton) symmetricRelations :: [(Int, S.Set Int)]
+    in IM.fromListWith (S.union) (nub $ a ++ b)
   where symmetricRelations = let (as, bs) = unzip relations in zip bs as
 
 randomEdges :: MonadRandom m => Int -> Int -> m Edges
@@ -80,7 +96,7 @@ cost (Graph ns _) path = 1 - product (map (\x -> 1 - ns ! x) path)
 
 islands :: Graph a -> [[Int]]
 islands g@(Graph ns _) =
-    let nis = [0..V.length ns - 1]
+    let nis = [0..IM.size ns - 1]
     in go nis
   where go [] = []
         go unvisited@(n:_) =

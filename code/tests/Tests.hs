@@ -1,18 +1,20 @@
-module Main (main) where
+module Main where
 import Data.UndirectedGraph
 import Data.UndirectedGraph.Internal
 import Data.UndirectedGraph.Path.Bruteforce
+import Data.UndirectedGraph.Path.Dijkstra
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.HUnit hiding (path)
 import Data.List (sort)
 import qualified Data.Vector as V
+import Data.IntMap (empty)
 
 main :: IO ()
 main = defaultMain
   [ testGroup "Enumerate paths"
     [ testCase "empty"
-        $ enumeratePaths 0 1 (Graph V.empty V.empty) @?= []
+        $ enumeratePaths 0 1 (Graph empty empty) @?= []
     , testCase "minimal"
         $ enumeratePaths 0 1 (graphFromList [(0,1)] ones) @?= [[0, 1]]
     , testCase "appendix"
@@ -46,21 +48,20 @@ main = defaultMain
         $ cost (graphFromList [(0,1),(0,2),(1,3),(2,3)] [0,1,0,0]) [0,1]
             @?= 1.0
     , testCase "w1"
-        $ cost (graphFromList [(0,1),(1,2),(2,3),(0,4),(4,5),(5,3)]
-                              [0,1,0,0,0.5,0.5])
-               [0,4,5,3] @?= 0.75
+        $ cost tricky [0,4,5,3] @?= 0.75
     , testCase "w2"
-        $ cost (graphFromList [(0,1),(1,2),(2,3),(0,4),(4,5),(5,3)]
-                              [0,1,0,0,0.5,0.5])
-               [0,1,2,3] @?= 1
+        $ cost tricky [0,1,2,3] @?= 1
     ]
-  , testGroup "Brute force shortest path"
-    [ testCase "square 1" $ bruteForceOptimalPath 0 3
-        (graphFromList [(0,1),(0,2),(1,3),(2,3)] [0,1,0,0])
-        @?= [0,2,3]
-    , testCase "square 2" $ bruteForceOptimalPath 0 1
-        (graphFromList [(0,1),(0,2),(1,3),(2,3)] [0,1,0,0])
-        @?= [0,1]
-    ]
+  , testGroup "Brute force shortest path" $ testPaths bruteForceOptimalPath
+  , testGroup "Dijkstra" $ testPaths dijkstra
   ]
-  where ones = [1::Double,1..]
+  where testPaths pathFun =
+            [ testCase "square 1" $ pathFun 0 3 square @?= [0,2,3]
+            , testCase "square 2" $ pathFun 0 1 square @?= [0,1]
+            , testCase "tricky"   $ pathFun 0 3 tricky @?= [0,4,5,3]
+            ]
+
+ones = [1::Double,1..]
+square = graphFromList [(0,1),(0,2),(1,3),(2,3)] [0,1,0,0]
+tricky = graphFromList [(0,1),(1,2),(2,3),(0,4),(4,5),(5,3)]
+                       [0,1,0,0,0.5,0.5]
