@@ -17,9 +17,11 @@ Library
                    Data.UndirectedGraph.Path.Bruteforce
                    Data.UndirectedGraph.Path.Random
                    Data.UndirectedGraph.Path.Dijkstra
+                   Data.UndirectedGraph.Path.UCB1
   Other-modules:   Data.UndirectedGraph.RandomUtil
   Ghc-options:    -Wall
-  Build-depends: base, mtl, MonadRandom, vector, random, containers
+  Build-depends: base, mtl, MonadRandom, vector, random, containers,
+                 PSQueue, list-extras
 
 Test-suite tests
   Type:           exitcode-stdio-1.0
