@@ -3,7 +3,7 @@ module Data.UndirectedGraph.Path.UCB1 where
 
 import Data.UndirectedGraph.Internal
 import Data.IntMap hiding (map, update)
-import qualified Data.IntMap as IM
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Set as S
 import Data.List.Extras (argmax)
 import Data.List (find)
@@ -12,12 +12,14 @@ import Control.Monad.Random hiding (fromList)
 
 -- | Given a start and a goal, return an infinite list of (hopefully) improving
 -- paths.
-banditsPath :: MonadRandom m => Int -> Int -> Graph Double -> m [[Int]]
-banditsPath start goal g@(Graph ns es) = go bandits
-  where bandits = mapWithKey (\k _ -> makeUCB1 . S.toList $ (es ! k)) ns
-        go bs = do (path, bs') <- oneIteration start goal g bs
-                   (path :) `liftM` go bs'
+banditsPath :: MonadRandom m => Int -> Int -> Graph Double -> Int -> m [[Int]]
+banditsPath start goal g@(Graph ns es) n = go bandits n
+  where bandits = IM.map (\edgs -> makeUCB1 . S.toList $ edgs) es
+        go _ 0 = return []
+        go bs i = do (path, bs') <- oneIteration start goal g bs
+                     (path :) `liftM` go bs' (i - 1)
 
+oneIteration :: MonadRandom m => Int -> Int -> Graph Double -> Bandits -> m ([Int], Bandits)
 oneIteration start goal graph bandits =
   do path <- findPath bandits graph start goal
      return $ (path, updateBandits bandits path goal)
