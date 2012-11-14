@@ -4,7 +4,7 @@ import Prelude hiding (null)
 import Data.UndirectedGraph.RandomUtil
 import System.Random ()
 import Data.List
-import Control.Monad.Random
+import Control.Monad.LazyRandom
 import Control.Monad.State
 import Control.Arrow (second)
 import qualified Data.Set as S
@@ -91,6 +91,7 @@ connectStrongly num =
 
 
 cost :: Graph Double -> [Int] -> Double
+cost _            []   = 1
 cost (Graph ns _) path = 1 - product (map (\x -> 1 - ns ! x) path)
 
 

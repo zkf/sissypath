@@ -20,7 +20,7 @@ Library
                    Data.UndirectedGraph.Path.UCB1
   Other-modules:   Data.UndirectedGraph.RandomUtil
   Ghc-options:    -Wall
-  Build-depends: base, mtl, MonadRandom, vector, random, containers,
+  Build-depends: base, mtl, MonadRandom, MonadRandomLazy, vector, random, containers,
                  PSQueue, list-extras
 
 Test-suite tests

@@ -10,7 +10,7 @@ where
 
 import Data.UndirectedGraph.Internal
 import Control.Monad
-import Control.Monad.Random
+import Control.Monad.LazyRandom
 import qualified Data.IntMap as IM
 import Data.IntMap ((!))
 import Data.List (sort, nub, deleteFirstsBy)

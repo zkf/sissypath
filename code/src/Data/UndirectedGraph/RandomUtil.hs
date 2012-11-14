@@ -3,7 +3,7 @@ module Data.UndirectedGraph.RandomUtil
     , randomPairs
     , withProbability
     ) where
-import Control.Monad.Random
+import Control.Monad.LazyRandom
 import Control.Monad
 import Data.List (nub)
 

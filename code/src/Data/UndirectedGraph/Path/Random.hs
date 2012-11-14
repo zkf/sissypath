@@ -1,7 +1,8 @@
 module Data.UndirectedGraph.Path.Random where
 
 import Data.UndirectedGraph.Internal hiding (null)
-import Control.Monad.Random
+import Control.Monad.LazyRandom
+import Control.Monad.Random (fromList)
 import Control.Monad
 import Data.IntMap ((!))
 import Data.Set (Set, insert, (\\), singleton)

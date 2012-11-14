@@ -9,17 +9,26 @@ import Data.UndirectedGraph.Path.UCB1
 import qualified Data.IntMap as IM
 import Data.IntMap ((!))
 import Control.Monad
-import Control.Monad.Random
+import Control.Monad.LazyRandom
+import Control.Monad.Random (fromList, newStdGen)
 import Data.List
+import Debug.Trace
+import Control.Applicative
 
+testGraph :: Graph Double
+testGraph = graphFromList [(0,1),(2,3),(4,5),(1,3),(3,5),(1,6),(5,6)]
+                          [0,0,0,1,0,0,0]
 
 main :: IO ()
 main =
-  do graph <- randomGraph 30 60 3
-     gen <- newStdGen
+  do graph <- randomGraph 60 100 4
+     --let graph = testGraph
      let reps = 100
-         iters = 100
-         res = evalRand (test graph 0 7 reps iters) gen
+         iters = 500
+     gen <- newStdGen
+     starts <- replicateM reps $ fromList $ zip (IM.keys $ nodes graph) [1..]
+     goal   <- fromList $ zip (IM.keys $ nodes graph) [1..]
+     let res = evalRand (test graph starts goal iters) gen
          ppRes = map pp res
      putStrLn (unlines . map unwords $ transpose ppRes)
      -- let p1 = bruteForceOptimalPath 0 7 g
@@ -42,31 +51,32 @@ main =
 
 pp (label, d) = label : map show d
 
-test graph start goal reps iters = do
-    banditRes <- repeatedBanditPaths start goal graph reps iters
-    let banditAvgs = avgBanditCost banditRes graph reps
-        dijkstraAvg = dijkstraCost start goal graph
-    rndAvg <- replicateM iters $ avgRndCost randomPath start goal graph reps
-    rndMemAvg <- replicateM iters $ avgRndCost randomPathWithMemory start goal graph reps
-    return [("dijkstra", replicate iters dijkstraAvg)
-           ,("random",   rndAvg)
-           ,("random w/mem", rndMemAvg)
-           ,("bandits"     , banditAvgs)
+test :: MonadRandom m => Graph Double -> [Int] -> Int -> Int -> m [(String, [Double])]
+test graph starts goal iters = do
+    banditRes <- mapM (\s -> banditsPath s goal graph iters) starts
+    let banditAvgs = avgBanditCost graph banditRes
+        dijkstraAvg = avgDijkstraCost starts goal graph
+    rndAvg <- replicateM iters $ avgRndCost randomPath starts goal graph
+    rndMemAvg <- replicateM iters $ avgRndCost randomPathWithMemory starts goal graph
+    return [
+             ("dijkstra", replicate iters dijkstraAvg)
+           , ("random",   rndAvg)
+           , ("random w/mem", rndMemAvg)
+           , ("bandits"     , banditAvgs)
            ]
 
-dijkstraCost start goal graph = cost graph $ dijkstra start goal graph
+avgDijkstraCost :: [Int] -> Int -> Graph Double -> Double
+avgDijkstraCost starts goal graph =
+    let res = (flip map) starts $ cost graph . (\start -> dijkstra start goal graph)
+    in average res
 
 avgRndCost :: MonadRandom m =>
-    (Int -> Int -> Graph Double -> m [Int]) -> Int -> Int -> Graph Double -> Int -> m Double
-avgRndCost fun start goal graph n =
-  do res <- replicateM n $ liftM (cost graph) $ fun start goal graph
-     return $ sum res / fromIntegral n
+    (Int -> Int -> Graph Double -> m [Int]) -> [Int] -> Int ->  Graph Double -> m Double
+avgRndCost fun starts goal graph =
+  do res <- (flip mapM) starts $ liftM (cost graph) . (\start -> fun start goal graph)
+     return $ average res
 
-avgBanditCost repeatedIteratedPaths graph reps =
-  avgIterCosts' graph repeatedIteratedPaths
 
-repeatedBanditPaths start goal graph reps iters =
-  replicateM reps $ banditsPath start goal graph iters
 
 avgBanditCost' :: MonadRandom m => Int -> Int -> Graph Double -> Int -> m [Double]
 avgBanditCost' start goal graph n =
@@ -78,8 +88,8 @@ avgBanditCost' start goal graph n =
      return $ avgs
 
 -- | [ rep1, rep2 .. rep n] where rep n = [Path] (list of iterations)
-avgIterCosts' :: Graph Double -> [[Path]] -> [Double]
-avgIterCosts' graph reps =
+avgBanditCost :: Graph Double -> [[Path]] -> [Double]
+avgBanditCost graph reps =
   let w = map (map (cost graph)) reps :: [[Double]]
                     -- cost of each path in each iteration in each repetition
   in avgIterCosts w
