@@ -5,7 +5,8 @@ module Data.UndirectedGraph
 , Graph
 , edges
 , nodes
-, cost)
+, cost
+, Path)
 where
 
 import Data.UndirectedGraph.Internal

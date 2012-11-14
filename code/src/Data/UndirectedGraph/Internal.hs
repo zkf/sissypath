@@ -19,6 +19,8 @@ data Graph a = Graph { nodes :: Nodes a
 type Edges = IntMap (S.Set Int)
 type Nodes a = IntMap a
 
+type Path = [Int]
+
 instance (Show a) => Show (Graph a) where
     show (Graph ns es) =
         "id, value: neighbours\n"
