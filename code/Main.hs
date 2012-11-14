@@ -1,5 +1,4 @@
 module Main where
-import qualified Data.Set as S
 import Data.UndirectedGraph
 import Data.UndirectedGraph.Path.Random
 import Data.UndirectedGraph.Path.Bruteforce
@@ -7,13 +6,10 @@ import Data.UndirectedGraph.Path.Dijkstra
 import Data.UndirectedGraph.Path.UCB1
 -- import Graphics.Gloss hiding (Vector)
 import qualified Data.IntMap as IM
-import Data.IntMap ((!))
 import Control.Monad
 import Control.Monad.LazyRandom
 import Control.Monad.Random (fromList, newStdGen)
 import Data.List
-import Debug.Trace
-import Control.Applicative
 
 testGraph :: Graph Double
 testGraph = graphFromList [(0,1),(2,3),(4,5),(1,3),(3,5),(1,6),(5,6)]
@@ -21,46 +17,41 @@ testGraph = graphFromList [(0,1),(2,3),(4,5),(1,3),(3,5),(1,6),(5,6)]
 
 main :: IO ()
 main =
-  do graph <- randomGraph 60 100 4
-     --let graph = testGraph
-     let reps = 1000
-         iters = 500
+  do -- graph <- randomGraph 60 100 4
+     let reps = 5
+         iters = 10
+     graphs <- replicateM reps $ graphFromList [(0,1),(2,3),(4,5),(1,3),(3,5),(1,6),(5,6)]
+                 `liftM` replicateM 7 ( fromList $ zip [0,1] [1, 1..])
+     print graphs
      gen <- newStdGen
-     starts <- replicateM reps $ fromList $ zip (IM.keys $ nodes graph) [1..]
-     goal   <- fromList $ zip (IM.keys $ nodes graph) [1..]
-     let res = evalRand (test graph starts goal iters) gen
+     starts <- replicateM reps $ fromList $ zip (IM.keys $ nodes $ head graphs) [1, 1..]
+     --graphs <- replicateM reps graph
+     goal   <- fromList $ zip (IM.keys $ nodes $ head graphs) [1, 1..]
+     let res = evalRand (test graphs starts goal iters) gen
          ppRes = ("iteration" : map show [1 :: Int .. iters]) : map pp res
      putStrLn (unlines . map unwords $ transpose ppRes)
-     -- let p1 = bruteForceOptimalPath 0 7 g
-     -- p2 <- randomPath 0 7 g
-     -- p3 <- randomPathWithMemory 0 7 g
-     -- let [c1, c2, c3] = map (cost g) [p1, p2, p3]
-     -- print g
-     -- putStrLn $ "bruteforce:   " ++ show c1 ++ " " ++ show p1
-     --       ++ "\nrandom:       " ++ show c2 ++ " " ++ show p2
-     --       ++ "\nrandom w/mem: " ++ show c3 ++ " " ++ show p3
-  -- do g <- randomGraph 15
-  --    let p =  bruteForceOptimalPath 0 7 g
-  --        c = cost g p
-  --    printGraph g
-  --    putStrLn $ "path: " ++ show p ++ " cost: " ++ show c
-  --    displayGraph g
-     --print . last $ paths 0 1 g
-     --
-     --
 
+pp :: Show a => (String, [a]) -> [String]
 pp (label, d) = label : map show d
 
-test :: MonadRandom m => Graph Double -> [Int] -> Int -> Int -> m [(String, [Double])]
-test graph starts goal iters = do
-    banditRes <- mapM (\s -> take iters `liftM` banditsPath s goal graph) starts
-    let banditAvgs = avgBanditCost graph banditRes
-        dijkstraAvg = avgDijkstraCost starts goal graph
-    rndAvg <- replicateM iters $ avgRndCost randomPath starts goal graph
-    rndMemAvg <- replicateM iters $ avgRndCost randomPathWithMemory starts goal graph
+test :: MonadRandom m => [Graph Double] -> [Int] -> Int -> Int -> m [(String, [Double])]
+test graphs starts goal iters = do
+    let getCosts paths = zipWith cost graphs paths
+    banditCosts <- zipWithM (\graph start -> liftM getCosts $ banditsPath start goal graph)
+                          graphs starts
+    let banditAvgs = map average $ transpose banditCosts
+        dijkstraRes = zipWith (\graph start -> dijkstra start goal graph)
+                              graphs starts
+        dijkstraCost = average $ zipWith cost graphs dijkstraRes
+    --rndAvg <- replicateM iters $  randomPath starts goal graphs
+    rndRes <- replicateM iters $ zipWithM (\graph start -> randomPath start goal graph)
+                                          graphs starts
+    let rndCosts = map (zipWith cost graphs) rndRes
+        rndAvgs = map average rndCosts
+    --rndMemAvg <- replicateM iters $ avgRndCost randomPathWithMemory starts goal graphs
     return [
-             ("dijkstra", replicate iters dijkstraAvg)
-           , ("random",   rndAvg)
+             ("dijkstra", replicate iters dijkstraCost)
+           , ("random",   rndAvgs)
 --           , ("random w/mem", rndMemAvg)
            , ("bandits"     , banditAvgs)
            ]
@@ -77,28 +68,14 @@ avgRndCost fun starts goal graph =
      return $ average res
 
 -- | [ rep1, rep2 .. rep n] where rep n = [Path] (list of iterations)
-avgBanditCost :: Graph Double -> [[Path]] -> [Double]
-avgBanditCost graph reps =
-  let w = map (map (cost graph)) reps :: [[Double]]
-                    -- cost of each path in each iteration in each repetition
-  in avgIterCosts w
-
-avgIterCosts :: [[Double]] -> [Double]
-avgIterCosts [] = []
-avgIterCosts w =
-  let (costs, rest) =
-          foldr tr ([], []) w
-  in average costs : avgIterCosts rest
-  where tr [] a = a
-        tr (c:t) (costs', rest') = (c:costs', t:rest')
-
-
-pathCosts :: Graph Double -> [Path] -> [Double]
-pathCosts graph paths = map (cost graph) paths
+avgBanditCost :: [[Double]] -> [Double]
+avgBanditCost = map average . transpose
 
 average :: [Double] -> Double
 average costs = theSum / fromIntegral n
-  where (theSum, n) = foldl (\(s', n') c -> (s' + c, succ n')) (0, 0) costs
+  where (theSum, n) = foldl (\(s', n') c -> (s' + c, succ n'))
+                            (0, 0::Int)
+                            costs
 
 -- displayGraph :: Graph (Char, (Double, Double)) -> IO ()
 -- displayGraph g = display window black (renderGraph dims g)
