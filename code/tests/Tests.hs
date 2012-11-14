@@ -3,12 +3,15 @@ import Data.UndirectedGraph
 import Data.UndirectedGraph.Internal
 import Data.UndirectedGraph.Path.Bruteforce
 import Data.UndirectedGraph.Path.Dijkstra
+import Data.UndirectedGraph.Path.UCB1
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.HUnit hiding (path)
 import Data.List (sort)
 import qualified Data.Vector as V
 import Data.IntMap (empty)
+import Control.Monad
+import Control.Monad.Random
 
 main :: IO ()
 main = defaultMain
@@ -54,6 +57,17 @@ main = defaultMain
     ]
   , testGroup "Brute force shortest path" $ testPaths bruteForceOptimalPath
   , testGroup "Dijkstra" $ testPaths dijkstra
+  , testGroup "Bandits" 
+    [ testCase "square 1" $ do gen <- newStdGen
+                               let res = evalRand (banditsPath 0 3 square) gen
+                               res !! 500 @?= [0,2,3]
+    , testCase "square 2" $ do gen <- newStdGen
+                               let res = evalRand (banditsPath 0 1 square) gen
+                               res !! 500 @?= [0,1]
+    , testCase "tricky" $ do gen <- newStdGen
+                             let res = evalRand (banditsPath 0 3 square) gen
+                             res !! 500 @?= [0,4,5,3]
+    ]
   ]
   where testPaths pathFun =
             [ testCase "square 1" $ pathFun 0 3 square @?= [0,2,3]
