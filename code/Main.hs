@@ -23,13 +23,13 @@ main :: IO ()
 main =
   do graph <- randomGraph 60 100 4
      --let graph = testGraph
-     let reps = 100
+     let reps = 1000
          iters = 500
      gen <- newStdGen
      starts <- replicateM reps $ fromList $ zip (IM.keys $ nodes graph) [1..]
      goal   <- fromList $ zip (IM.keys $ nodes graph) [1..]
      let res = evalRand (test graph starts goal iters) gen
-         ppRes = map pp res
+         ppRes = ("iteration" : map show [1 :: Int .. iters]) : map pp res
      putStrLn (unlines . map unwords $ transpose ppRes)
      -- let p1 = bruteForceOptimalPath 0 7 g
      -- p2 <- randomPath 0 7 g
@@ -92,7 +92,6 @@ avgIterCosts w =
   where tr [] a = a
         tr (c:t) (costs', rest') = (c:costs', t:rest')
 
-type Path = [Int]
 
 pathCosts :: Graph Double -> [Path] -> [Double]
 pathCosts graph paths = map (cost graph) paths
