@@ -53,7 +53,7 @@ pp (label, d) = label : map show d
 
 test :: MonadRandom m => Graph Double -> [Int] -> Int -> Int -> m [(String, [Double])]
 test graph starts goal iters = do
-    banditRes <- mapM (\s -> banditsPath s goal graph iters) starts
+    banditRes <- mapM (\s -> take iters `liftM` banditsPath s goal graph) starts
     let banditAvgs = avgBanditCost graph banditRes
         dijkstraAvg = avgDijkstraCost starts goal graph
     rndAvg <- replicateM iters $ avgRndCost randomPath starts goal graph

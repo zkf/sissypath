@@ -12,12 +12,11 @@ import Control.Monad.LazyRandom hiding (fromList)
 
 -- | Given a start and a goal, return an infinite list of (hopefully) improving
 -- paths.
-banditsPath :: MonadRandom m => Int -> Int -> Graph Double -> Int -> m [[Int]]
-banditsPath start goal g@(Graph ns es) n = go bandits n
+banditsPath :: MonadRandom m => Int -> Int -> Graph Double -> m [[Int]]
+banditsPath start goal g@(Graph ns es) = go bandits
   where bandits = IM.map (\edgs -> makeUCB1 . S.toList $ edgs) es
-        go _ 0 = return []
-        go bs i = do (rpath, bs') <- oneIteration start goal g bs
-                     ((if head rpath /= goal then [] else rpath) :) `liftM` go bs' (i - 1)
+        go bs = do (rpath, bs') <- oneIteration start goal g bs
+                   ((if head rpath /= goal then [] else rpath) :) `liftM` go bs'
 
 oneIteration :: MonadRandom m => Int -> Int -> Graph Double -> Bandits -> m ([Int], Bandits)
 oneIteration start goal graph bandits =
