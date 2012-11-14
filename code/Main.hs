@@ -61,7 +61,7 @@ test graph starts goal iters = do
     return [
              ("dijkstra", replicate iters dijkstraAvg)
            , ("random",   rndAvg)
-           , ("random w/mem", rndMemAvg)
+--           , ("random w/mem", rndMemAvg)
            , ("bandits"     , banditAvgs)
            ]
 
