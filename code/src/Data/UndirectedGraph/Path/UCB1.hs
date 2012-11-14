@@ -24,14 +24,14 @@ type BState g = StateT Bandits g Path
 -- | Given a start and a goal, return an infinite list of (hopefully) improving
 -- paths.
 banditsPath :: MonadRandom m => Int -> Int -> Graph Double -> m [[Int]]
-banditsPath start goal g@(Graph ns es) = evalStateT go bandits
+banditsPath start goal g@(Graph ns es) = liftM (map reverse) $ evalStateT go bandits
   where bandits = IM.map (\edgs -> makeUCB1 . S.toList $ edgs) es
-        go = repeatUntilM
+        go = repeatWithM
                 (\rpath -> head rpath /= goal)
                 (oneIteration start goal g)
-        repeatUntilM p a =
+        repeatWithM p a =
           do b <- a
-             liftM ((if p b then [] else b) :) $ repeatUntilM p a
+             ((if p b then [] else b) :) `liftM` repeatWithM p a
 
 oneIteration :: MonadRandom g => Int -> Int -> Graph Double -> BState g
 oneIteration start goal graph =
