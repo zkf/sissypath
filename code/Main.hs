@@ -76,17 +76,6 @@ avgRndCost fun starts goal graph =
   do res <- (flip mapM) starts $ liftM (cost graph) . (\start -> fun start goal graph)
      return $ average res
 
-
-
-avgBanditCost' :: MonadRandom m => Int -> Int -> Graph Double -> Int -> m [Double]
-avgBanditCost' start goal graph n =
-  do iters1 <- banditsPath start goal graph n
-     iters2 <- banditsPath start goal graph n
-     let costs1' = pathCosts graph $ take 20 iters1
-         costs2' = pathCosts graph $ take 20 iters2
-         avgs = zipWith (\a b -> (a + b) / 2) costs1' costs2'
-     return $ avgs
-
 -- | [ rep1, rep2 .. rep n] where rep n = [Path] (list of iterations)
 avgBanditCost :: Graph Double -> [[Path]] -> [Double]
 avgBanditCost graph reps =
