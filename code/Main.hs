@@ -20,11 +20,14 @@ main =
   do -- graph <- randomGraph 60 100 4
      let reps = 5
          iters = 10
-     graphs <- replicateM reps $ graphFromList [(0,1),(2,3),(4,5),(1,3),(3,5),(1,6),(5,6)]
-                 `liftM` replicateM 7 ( fromList $ zip [0,1] [1, 1..])
+     graphs <- replicateM reps
+               $ graphFromList [(0,1),(2,3),(4,5),(1,3),(3,5),(1,6),(5,6)]
+               `liftM` replicateM 7 ( fromList $ zip [0,1] [1, 1..])
      print graphs
      gen <- newStdGen
-     starts <- replicateM reps $ fromList $ zip (IM.keys $ nodes $ head graphs) [1, 1..]
+     starts <- replicateM reps
+               $ fromList
+               $ zip (IM.keys $ nodes $ head graphs) [1, 1..]
      --graphs <- replicateM reps graph
      goal   <- fromList $ zip (IM.keys $ nodes $ head graphs) [1, 1..]
      let res = evalRand (test graphs starts goal iters) gen
@@ -34,21 +37,25 @@ main =
 pp :: Show a => (String, [a]) -> [String]
 pp (label, d) = label : map show d
 
-test :: MonadRandom m => [Graph Double] -> [Int] -> Int -> Int -> m [(String, [Double])]
+test :: MonadRandom m
+    => [Graph Double] -> [Int] -> Int -> Int -> m [(String, [Double])]
 test graphs starts goal iters = do
     let getCosts paths = zipWith cost graphs paths
-    banditCosts <- zipWithM (\graph start -> liftM getCosts $ banditsPath start goal graph)
-                          graphs starts
+    banditCosts <- zipWithM
+                (\graph start -> liftM getCosts $ banditsPath start goal graph)
+                graphs starts
     let banditAvgs = map average $ transpose banditCosts
         dijkstraRes = zipWith (\graph start -> dijkstra start goal graph)
                               graphs starts
         dijkstraCost = average $ zipWith cost graphs dijkstraRes
     --rndAvg <- replicateM iters $  randomPath starts goal graphs
-    rndRes <- replicateM iters $ zipWithM (\graph start -> randomPath start goal graph)
-                                          graphs starts
+    rndRes <- replicateM iters
+              $ zipWithM (\graph start -> randomPath start goal graph)
+                         graphs starts
     let rndCosts = map (zipWith cost graphs) rndRes
         rndAvgs = map average rndCosts
-    --rndMemAvg <- replicateM iters $ avgRndCost randomPathWithMemory starts goal graphs
+    --rndMemAvg <- replicateM iters
+    --             $ avgRndCost randomPathWithMemory starts goal graphs
     return [
              ("dijkstra", replicate iters dijkstraCost)
            , ("random",   rndAvgs)
@@ -58,13 +65,16 @@ test graphs starts goal iters = do
 
 avgDijkstraCost :: [Int] -> Int -> Graph Double -> Double
 avgDijkstraCost starts goal graph =
-    let res = (flip map) starts $ cost graph . (\start -> dijkstra start goal graph)
+    let res = (flip map) starts
+              $ cost graph . (\start -> dijkstra start goal graph)
     in average res
 
-avgRndCost :: MonadRandom m =>
-    (Int -> Int -> Graph Double -> m [Int]) -> [Int] -> Int ->  Graph Double -> m Double
+avgRndCost :: MonadRandom m
+    => (Int -> Int -> Graph Double -> m [Int])
+    -> [Int] -> Int ->  Graph Double -> m Double
 avgRndCost fun starts goal graph =
-  do res <- (flip mapM) starts $ liftM (cost graph) . (\start -> fun start goal graph)
+  do res <- (flip mapM) starts
+            $ liftM (cost graph) . (\start -> fun start goal graph)
      return $ average res
 
 -- | [ rep1, rep2 .. rep n] where rep n = [Path] (list of iterations)
