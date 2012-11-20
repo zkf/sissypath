@@ -26,18 +26,15 @@ type BState g = StateT Bandits g Path
 banditsPath :: MonadRandom m => Int -> Int -> Graph Double -> m [[Int]]
 banditsPath start goal g@(Graph ns es) = liftM (map reverse) $ evalStateT go bandits
   where bandits = IM.map (\edgs -> makeUCB1 . S.toList $ edgs) es
-        go = repeatWithM
-                (\rpath -> head rpath /= goal)
-                (oneIteration start goal g)
-        repeatWithM p a =
-          do b <- a
-             ((if p b then [] else b) :) `liftM` repeatWithM p a
+        go = do rpath <- oneIteration start goal g
+                liftM (rpath :) go
 
 oneIteration :: MonadRandom g => Int -> Int -> Graph Double -> BState g
 oneIteration start goal graph =
-  do path <- findPath graph start goal
-     modify (updateBandits path goal)
-     return path
+  do rpath <- findPath graph start goal
+     modify (updateBandits rpath goal)
+     -- return (if head rpath /= goal then [] else rpath)
+     return rpath
 
 -- | Not nessecarily a valid path ...
 findPath :: MonadRandom m => Graph Double -> Int -> Int -> BState m
@@ -45,7 +42,8 @@ findPath (Graph ns es) start goal =
     do bandits <- get
        validPath S.empty (traverse bandits start)
   where validPath visited (n:path)
-          | n == goal || n `S.member` visited = return [n]
+          | n == goal = return [n]
+          | n `S.member` visited = return []
           | otherwise =
               do r <- getRandomR (0, 1)
                  if r < (ns ! n)
