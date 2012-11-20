@@ -22,24 +22,46 @@ randomGraph :: MonadRandom m => Int -> Int -> Int -> m (Graph Double)
 randomGraph size numEdges dangerLevel =
   do -- nodesList <- take size `liftM` getRandomRs (0.0, 1.0)
      let -- nodes = Nodes $ V.fromList nodesList
-         theNodes' = zip [0..] $ replicate size 0.0
+         theNodes = zip [0..] $ replicate size 0.0
      theEdges <- randomEdges size numEdges
      pointZero <- getRandomR (0, size - 1)
-     let theNodes = IM.fromList $ insertDangerZone pointZero theNodes' theEdges
-     return $ Graph theNodes theEdges
-  where insertDangerZone :: Int -> [(Int, Double)] -> Edges -> [(Int, Double)]
-        insertDangerZone pointZero theNodes theEdges =
-           let newNodes = concat
-                   $ zipWith (\ns p -> zip (S.toList ns) (repeat p))
-                             neighbourTree (replicate dangerLevel 1.0)
-               neighbourTree = singleton pointZero : nlevels (singleton pointZero) pointZero
-           in theNodes // newNodes
-         where nlevels :: Set Int -> Int -> [Set Int]
-               nlevels v i = let myNs =  (theEdges ! i) \\ v
-                                 v'   = v `union` myNs
-                             in myNs : concatMap (nlevels v') (S.toList myNs)
-               as // bs = let as' = deleteFirstsBy (\a b -> fst a == fst b) as bs
-                            in as' ++ bs
+     let graph = Graph (IM.fromList theNodes) theEdges
+     let graph' = insertHazardZone graph pointZero dangerLevel
+     return graph'
+
+insertHazardZone :: Graph Double -> Int -> Int -> Graph Double
+insertHazardZone graph@(Graph theNodes theEdges) pointZero levels =
+   graph{ nodes = newNodes `IM.union` theNodes }
+ where as // bs = let as' = deleteFirstsBy (\a b -> fst a == fst b) as bs
+                  in as' ++ bs
+
+       newNodes = IM.fromList
+                  $ concat
+                  $ zipWith (\ns p -> zip (S.toList ns) (repeat p))
+                            neighbourTree
+                            (replicate levels 1.0)
+       neighbourTree =
+           singleton pointZero : nlevels (singleton pointZero) pointZero
+
+       nlevels :: Set Int -> Int -> [Set Int]
+       nlevels v i = let myNs =  (theEdges ! i) \\ v
+                         v'   = v `union` myNs
+                     in myNs : concatMap (nlevels v') (S.toList myNs)
+
+
+removeHazards :: Graph Double -> Graph Double
+removeHazards graph@(Graph ns _) = graph {nodes = IM.map (const 0) ns}
+
+insertHazards :: MonadRandom m => Graph Double -> Double -> m (Graph Double)
+insertHazards graph@(Graph ns es) prob =
+  do ps <- getRandomRs (0, 1)
+     let ks  = IM.keys ns
+         ns' = foldl (\m (k, p) -> if p < prob
+                                      then IM.insert k 1.0 m
+                                      else m)
+                      ns (zip ks ps)
+     return $ graph {nodes = ns'}
+
 
 randomGraph' :: MonadRandom m => Int -> m (Graph (Char, (Double, Double)))
 randomGraph' size =
