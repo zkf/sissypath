@@ -10,58 +10,81 @@ import Control.Monad
 import Control.Monad.LazyRandom
 import Control.Monad.Random (fromList, newStdGen)
 import Data.List
+import Data.Monoid
+import System.Environment
 
-testGraph :: Graph Double
+testGraph :: HazardGraph
 testGraph = graphFromList [(0,1),(2,3),(4,5),(1,3),(3,5),(1,6),(5,6)]
-                          [0,0,0,1,0,0,0]
+                          [0,0,0,0,0,0,0]
 
 main :: IO ()
 main =
-  do -- graph <- randomGraph 60 100 4
-     let reps = 5
-         iters = 10
-     graphs <- replicateM reps
-               $ graphFromList [(0,1),(2,3),(4,5),(1,3),(3,5),(1,6),(5,6)]
-               `liftM` replicateM 7 ( fromList $ zip [0,1] [1, 1..])
-     print graphs
+  do -- graph <- randomEmptyGraph 7 14
+     [repsS, itersS] <- getArgs
+     let reps = read repsS
+         iters = read itersS
+         halfIters = round $ fromIntegral iters / 2
+     let graphs1 = (insertHazards testGraph 0.3) >>= return . replicate halfIters
+     let graphs2 = (insertHazards testGraph 0.3) >>= return . replicate halfIters
+     let graphTS = liftM concat $ sequence [graphs1, graphs2]
+     graphsTS <- replicateM reps graphTS
      gen <- newStdGen
      starts <- replicateM reps
                $ fromList
-               $ zip (IM.keys $ nodes $ head graphs) [1, 1..]
+               $ zip (IM.keys $ nodes testGraph) [1, 1..]
      --graphs <- replicateM reps graph
-     goal   <- fromList $ zip (IM.keys $ nodes $ head graphs) [1, 1..]
-     let res = evalRand (test graphs starts goal iters) gen
+     --goal   <- fromList $ zip (IM.keys $ nodes $ head graphs) [1, 1..]
+     let goal = 6
+     let res = evalRand (test graphsTS starts goal iters) gen
          ppRes = ("iteration" : map show [1 :: Int .. iters]) : map pp res
      putStrLn (unlines . map unwords $ transpose ppRes)
 
 pp :: Show a => (String, [a]) -> [String]
 pp (label, d) = label : map show d
 
+graphUpdate :: MonadRandom m => Int -> Graph Double -> Int -> m (Graph Double)
+graphUpdate when graph t = do
+    if when == t
+       then insertHazards (removeHazards graph) 0.4
+       else return graph
+
+type HazardGraph = Graph Double
+type TimeSeries a = [a]
+
 test :: MonadRandom m
-    => [Graph Double] -> [Int] -> Int -> Int -> m [(String, [Double])]
-test graphs starts goal iters = do
-    let getCosts paths = zipWith cost graphs paths
-    banditCosts <- zipWithM
-                (\graph start -> liftM getCosts $ banditsPath start goal graph)
-                graphs starts
-    let banditAvgs = map average $ transpose banditCosts
-        dijkstraRes = zipWith (\graph start -> dijkstra start goal graph)
-                              graphs starts
-        dijkstraCost = average $ zipWith cost graphs dijkstraRes
+    => [TimeSeries HazardGraph] -> [Int] -> Int -> Int -> m [(String, [Double])]
+test graphsTS starts goal iters = do
+    -- let upd = graphUpdate (round $ fromIntegral iters / 2)
+    let upd graph _ = return graph
+    let getCosts graphTS paths = zipWith cost graphTS paths
+    banditPaths <- zipWithM
+                (\graphTS start ->
+                    banditsPath' start goal graphTS)
+                graphsTS starts
+    let banditCosts = zipWith getCosts graphsTS banditPaths
+    let banditAvgs = take iters $ map average $ transpose banditCosts
+
+        dijkstraPaths = zipWith
+                          (\graphTS start -> iterDijkstra start goal graphTS)
+                          graphsTS
+                          starts
+        dijkstraCost = zipWith getCosts graphsTS dijkstraPaths
+        dijkstraAvgs = map average . transpose $ dijkstraCost
     --rndAvg <- replicateM iters $  randomPath starts goal graphs
-    rndRes <- replicateM iters
-              $ zipWithM (\graph start -> randomPath start goal graph)
-                         graphs starts
-    let rndCosts = map (zipWith cost graphs) rndRes
-        rndAvgs = map average rndCosts
+    rndRes <- zipWithM (\graphTS start -> iterRandomPath start goal graphTS)
+                       graphsTS
+                       starts
+    let rndCosts = zipWith getCosts graphsTS rndRes
+        rndAvgs = map average . transpose $ rndCosts
     --rndMemAvg <- replicateM iters
     --             $ avgRndCost randomPathWithMemory starts goal graphs
     return [
-             ("dijkstra", replicate iters dijkstraCost)
+             ("dijkstra", dijkstraAvgs)
            , ("random",   rndAvgs)
 --           , ("random w/mem", rndMemAvg)
            , ("bandits"     , banditAvgs)
            ]
+
 
 avgDijkstraCost :: [Int] -> Int -> Graph Double -> Double
 avgDijkstraCost starts goal graph =
