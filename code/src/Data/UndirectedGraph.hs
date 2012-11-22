@@ -1,6 +1,8 @@
 module Data.UndirectedGraph
 ( randomGraph
 , insertHazards
+, insertHazardZone
+, insertHazardZone'
 , removeHazards
 , randomGraph'
 , randomEmptyGraph
@@ -14,6 +16,7 @@ where
 
 import Data.UndirectedGraph.Internal
 import Control.Monad
+import Control.Monad.Random (fromList)
 import Control.Monad.LazyRandom
 import qualified Data.IntMap as IM
 import Data.IntMap ((!))
@@ -57,6 +60,11 @@ insertHazardZone graph@(Graph theNodes theEdges) pointZero levels =
        nlevels v i = let myNs =  (theEdges ! i) \\ v
                          v'   = v `union` myNs
                      in myNs : concatMap (nlevels v') (S.toList myNs)
+
+insertHazardZone' :: MonadRandom m => Graph Double -> Int -> m (Graph Double)
+insertHazardZone' graph@(Graph nodes _) levels =
+  do pointZero <- fromList $ zip (IM.keys nodes) [1, 1 .. ]
+     return $ insertHazardZone graph pointZero levels
 
 
 removeHazards :: Graph Double -> Graph Double
