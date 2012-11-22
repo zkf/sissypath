@@ -39,15 +39,17 @@ oneIteration start goal graph =
 findPath :: MonadRandom m => Graph Double -> Int -> Int -> BState m
 findPath (Graph ns es) start goal =
     do bandits <- get
-       validPath S.empty (traverse bandits start)
-  where validPath visited (n:path)
+       validPath 0 S.empty (traverse bandits start)
+  where validPath probDeath visited (n:path)
           | n == goal = return [n]
           | n `S.member` visited = return [n]
           | otherwise =
-              do r <- getRandomR (0, 1)
-                 if r < (ns ! n)
+              do let probDeath' = 1 - (1 + probDeath) * (1 - ns ! n)
+                 r <- getRandomR (0, 1)
+                 if r < probDeath'
                     then return [n]
-                    else validPath (n `S.insert` visited) path >>= return.(++ [n])
+                    else validPath probDeath' (n `S.insert` visited) path
+                            >>= return.(++ [n])
 
 -- | If the path ends at goal then hand out rewards.
 updateBandits :: [Int] -> Int -> Bandits -> Bandits
