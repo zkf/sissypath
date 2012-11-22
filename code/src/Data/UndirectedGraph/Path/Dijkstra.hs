@@ -11,6 +11,9 @@ import qualified Data.PSQueue as PQ
 import Data.PSQueue (Binding(..), minView)
 import Debug.Trace
 
+iterDijkstra start goal graphTS =
+    map (dijkstra start goal) graphTS
+
 -- | Perform a shortest-path search according to Dijkstra's algorithm.
 dijkstra :: Int -> Int -> Graph Double -> [Int]
 dijkstra start goal (Graph ns es) =

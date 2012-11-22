@@ -8,6 +8,9 @@ import Data.IntMap ((!))
 import Data.Set (Set, insert, (\\), singleton)
 import qualified Data.Set as S
 
+iterRandomPath start goal graphTS =
+    mapM (randomPath start goal) graphTS
+
 -- | Randomly find a path from start to goal through the given graph.
 randomPath :: MonadRandom m => Int -> Int -> Graph Double -> m [Int]
 randomPath start goal (Graph _ es) = liftM (start:) $ go start
