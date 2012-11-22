@@ -29,6 +29,10 @@ banditsPath start goal g@(Graph ns es) = liftM (map reverse) $ evalStateT go ban
         go = do rpath <- oneIteration start goal g
                 liftM (rpath :) go
 
+banditsPath' start goal graphTS =
+    simulate bandits graphTS (\g _ -> oneIteration start goal g)
+  where bandits = IM.map (\es -> makeUCB1 . S.toList $ es) . edges $ head graphTS
+
 oneIteration :: MonadRandom g => Int -> Int -> Graph Double -> BState g
 oneIteration start goal graph =
   do rpath <- findPath graph start goal
