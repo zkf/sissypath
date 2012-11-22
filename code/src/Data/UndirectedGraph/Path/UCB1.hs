@@ -33,8 +33,7 @@ oneIteration :: MonadRandom g => Int -> Int -> Graph Double -> BState g
 oneIteration start goal graph =
   do rpath <- findPath graph start goal
      modify (updateBandits rpath goal)
-     -- return (if head rpath /= goal then [] else rpath)
-     return rpath
+     return (if head rpath /= goal then [] else rpath)
 
 -- | Not nessecarily a valid path ...
 findPath :: MonadRandom m => Graph Double -> Int -> Int -> BState m
@@ -43,7 +42,7 @@ findPath (Graph ns es) start goal =
        validPath S.empty (traverse bandits start)
   where validPath visited (n:path)
           | n == goal = return [n]
-          | n `S.member` visited = return []
+          | n `S.member` visited = return [n]
           | otherwise =
               do r <- getRandomR (0, 1)
                  if r < (ns ! n)
