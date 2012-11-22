@@ -7,7 +7,7 @@ import Data.UndirectedGraph.Path.UCB1
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.HUnit hiding (path)
-import Data.List (sort)
+import Data.List (sort, find)
 import Data.IntMap (empty)
 import Control.Monad.Random
 
@@ -63,8 +63,10 @@ main = defaultMain
                                let res = evalRand (banditsPath 0 1 square) gen
                                res !! 500 @?= [0,1]
     , testCase "tricky" $ do gen <- newStdGen
-                             let res = evalRand (banditsPath 0 3 tricky) gen
-                             res !! 500 @?= [0,4,5,3]
+                             let Just res = find (not . Prelude.null)
+                                       $ drop 500
+                                       $ evalRand (banditsPath 0 3 tricky) gen
+                             res @?= [0,4,5,3]
     ]
   ]
   where testPaths pathFun =
