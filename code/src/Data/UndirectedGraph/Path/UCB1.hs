@@ -62,7 +62,7 @@ findPath (Graph ns _) start goal =
 -- | If the path ends at goal then hand out rewards.
 updateBandits :: [Int] -> Int -> Bandits -> Bandits
 updateBandits rpath goal bandits =
-  let reward = if head rpath == goal then 1 else -1
+  let reward = if head rpath == goal then 1 else 0
   in go rpath reward bandits
   where discount = 0.95
         go [] _ _ = error "updateBandits called with empty path"
