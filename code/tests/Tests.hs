@@ -57,7 +57,7 @@ main = defaultMain
     ]
   , testGroup "Brute force shortest path" $ testPaths bruteForceOptimalPath
   , testGroup "Dijkstra" $ testPaths dijkstra
-  , testGroup "Bandits" 
+  , testGroup "Bandits"
     [ testCase "square 1" $ do gen <- newStdGen
                                let res = evalRand (banditsPath 0 3 square) gen
                                res !! 500 @?= [0,2,3]
@@ -65,7 +65,7 @@ main = defaultMain
                                let res = evalRand (banditsPath 0 1 square) gen
                                res !! 500 @?= [0,1]
     , testCase "tricky" $ do gen <- newStdGen
-                             let res = evalRand (banditsPath 0 3 square) gen
+                             let res = evalRand (banditsPath 0 3 tricky) gen
                              res !! 500 @?= [0,4,5,3]
     ]
   ]
