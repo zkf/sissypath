@@ -7,9 +7,8 @@ import qualified Data.IntMap.Strict as IM
 import qualified Data.Set as S
 import Data.List.Extras (argmax)
 import Data.List (find)
-import Control.Monad (liftM)
 import Control.Monad.State
-import Control.Monad.LazyRandom hiding (fromList)
+import Control.Monad.LazyRandom
 
 data UCB1 = UCB1 (IntMap Arm)
                  Int   -- Total number of plays
@@ -23,15 +22,19 @@ type BState g = StateT Bandits g Path
 
 -- | Given a start and a goal, return an infinite list of (hopefully) improving
 -- paths.
-banditsPath :: MonadRandom m => Int -> Int -> Graph Double -> m [[Int]]
-banditsPath start goal g@(Graph ns es) = liftM (map reverse) $ evalStateT go bandits
+banditsPath :: MonadRandom m => Int -> Int -> Graph Double -> m [Path]
+banditsPath start goal g@(Graph _ es) =
+    liftM (map reverse) $ evalStateT go bandits
   where bandits = IM.map (\edgs -> makeUCB1 . S.toList $ edgs) es
         go = do rpath <- oneIteration start goal g
                 liftM (rpath :) go
 
+banditsPath' :: MonadRandom m => Int -> Int -> [Graph Double] -> m [Path]
 banditsPath' start goal graphTS =
     simulate bandits graphTS (\g _ -> oneIteration start goal g)
-  where bandits = IM.map (\es -> makeUCB1 . S.toList $ es) . edges $ head graphTS
+  where bandits = IM.map (\es -> makeUCB1 . S.toList $ es)
+                  . edges
+                  $ head graphTS
 
 oneIteration :: MonadRandom g => Int -> Int -> Graph Double -> BState g
 oneIteration start goal graph =
@@ -41,10 +44,11 @@ oneIteration start goal graph =
 
 -- | Not nessecarily a valid path ...
 findPath :: MonadRandom m => Graph Double -> Int -> Int -> BState m
-findPath (Graph ns es) start goal =
+findPath (Graph ns _) start goal =
     do bandits <- get
        validPath 0 S.empty (traverse bandits start)
-  where validPath probDeath visited (n:path)
+  where validPath _ _ [] = error "validPath called with empty path"
+        validPath probDeath visited (n:path)
           | n == goal = return [n]
           | n `S.member` visited = return [n]
           | otherwise =
@@ -61,10 +65,11 @@ updateBandits rpath goal bandits =
   let reward = if head rpath == goal then 1 else -1
   in go rpath reward bandits
   where discount = 0.95
-        go (_:[]) _ bandits = bandits
-        go (t:i:is) reward bandits =
-           let bandits' = adjust (\b -> update b t reward) i bandits
-           in go (i:is) (reward * discount) bandits'
+        go [] _ _ = error "updateBandits called with empty path"
+        go (_:[]) _ bs = bs
+        go (t:i:is) reward bs =
+           let bs' = adjust (\b -> update b t reward) i bs
+           in go (i:is) (reward * discount) bs'
 
 traverse :: Bandits -> Int -> [Int]
 traverse bandits = iterate (select . bandit)
@@ -101,14 +106,6 @@ update (UCB1 arms plays initPhase) index reward =
     in UCB1 arms' (plays + 1) initPhase
 
 updateArm :: Double -> Arm -> Arm
-updateArm reward (Arm (r, r2, count)) = Arm $ (r + reward, r2 + reward^(2::Int), count + 1)
-
-
-
-takeWhileM :: Monad m => (a -> m Bool) -> [a] -> m [a]
-takeWhileM _ [] = return []
-takeWhileM p (x:xs) =
-  do b <- p x
-     if b then (x:) `liftM` takeWhileM p xs
-          else return []
+updateArm reward (Arm (r, r2, count)) =
+  Arm $ (r + reward, r2 + reward^(2::Int), count + 1)
 
