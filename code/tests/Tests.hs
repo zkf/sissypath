@@ -8,9 +8,7 @@ import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.HUnit hiding (path)
 import Data.List (sort)
-import qualified Data.Vector as V
 import Data.IntMap (empty)
-import Control.Monad
 import Control.Monad.Random
 
 main :: IO ()
@@ -75,7 +73,10 @@ main = defaultMain
             , testCase "tricky"   $ pathFun 0 3 tricky @?= [0,4,5,3]
             ]
 
-ones = [1::Double,1..]
+ones :: [Double]
+ones = [1,1..]
+
+square, tricky :: Graph Double
 square = graphFromList [(0,1),(0,2),(1,3),(2,3)] [0,1,0,0]
 tricky = graphFromList [(0,1),(1,2),(2,3),(0,4),(4,5),(5,3)]
                        [0,1,0,0,0.5,0.5]
