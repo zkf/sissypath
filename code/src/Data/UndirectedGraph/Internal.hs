@@ -118,5 +118,10 @@ traverseFrom i (Graph _ es) =
               let myNeighbours = es ! current
               in S.foldl' go (current `S.insert` visited) myNeighbours
 
+simulate initState envTS stateFun =
+    evalStateT (go envTS 0) initState
+  where go (env:envs) t =
+           do result <- stateFun env t
+              (result :) `liftM` go envs (t + 1::Int)
 
 
