@@ -1,6 +1,9 @@
 module Data.UndirectedGraph
 ( randomGraph
+, insertHazards
+, removeHazards
 , randomGraph'
+, randomEmptyGraph
 , graphFromList
 , Graph
 , edges
@@ -28,6 +31,13 @@ randomGraph size numEdges dangerLevel =
      let graph = Graph (IM.fromList theNodes) theEdges
      let graph' = insertHazardZone graph pointZero dangerLevel
      return graph'
+
+randomEmptyGraph :: MonadRandom m => Int -> Int -> m (Graph Double)
+randomEmptyGraph size numEdges =
+  do let theNodes = zip [0..] $ replicate size 0.0
+     theEdges <- randomEdges size numEdges
+     let graph = Graph (IM.fromList theNodes) theEdges
+     return graph
 
 insertHazardZone :: Graph Double -> Int -> Int -> Graph Double
 insertHazardZone graph@(Graph theNodes theEdges) pointZero levels =
