@@ -40,6 +40,12 @@ type ProbGraph = Graph Rational
 null :: Graph g -> Bool
 null (Graph ns _) = IM.null ns
 
+size :: Graph a -> (Int, Int)
+size (Graph ns es) = (numNodes, numEdges)
+  where numNodes = IM.size ns
+        numEdges = (sum . map S.size $ IM.elems es) `div` 2
+
+
 -- | The value and neighbours of the given node, and the graph minus the node.
 view :: Show a => Int -> Graph a -> (a, S.Set Int, Graph a)
 view i g@(Graph ns es) =
@@ -61,7 +67,15 @@ randomEdges :: MonadRandom m => Int -> Int -> m Edges
 randomEdges numberOfNodes numberOfConnections =
     do let stronglyConnected = connectStrongly' numberOfNodes
        -- stronglyConnected <- connectStrongly numberOfNodes
-       randomNeighbours <- randomPairs (numberOfConnections - numberOfNodes) (0, numberOfNodes - 1)
+       randomNeighbours <-
+           (take (numberOfConnections - numberOfNodes)
+           . filter (\(a, b) -> a /= succ b && a /= pred b
+                                && (not (a == 0 || b == 0)
+                                        || (a == 0 && b /= numberOfNodes-1
+                                            || b == 0 && a /= numberOfNodes-1)
+                                   )
+                    )
+            ) `liftM` randomPairs  (0, numberOfNodes - 1)
        let theEdges = neighboursFromList (stronglyConnected ++ randomNeighbours) numberOfNodes
        return theEdges
 
